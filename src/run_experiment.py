@@ -38,16 +38,23 @@ def set_seeds(seed: int) -> None:
     np.random.seed(seed)
 
 
-def run_noop(config: dict) -> float:
+def run_noop(config: dict) -> dict:
     """Stand-in experiment: a single seeded draw.
 
-    Identical seeds give an identical value, which is exactly what the Phase 0
-    acceptance bar checks.
+    Identical seeds give an identical value, which is exactly what the smoke test
+    checks.
     """
-    return float(np.random.rand())
+    return {"dummy_metric": float(np.random.rand())}
 
 
-VARIANTS = {"noop": run_noop}
+def _run_sklearn_linear(config: dict) -> dict:
+    # Imported lazily so a noop run does not pull in the modeling stack.
+    from src.models.sklearn_linear import run
+
+    return run(config)
+
+
+VARIANTS = {"noop": run_noop, "sklearn_linear": _run_sklearn_linear}
 
 
 def main() -> None:
@@ -69,10 +76,11 @@ def main() -> None:
         mlflow.log_param("seed", seed)
         mlflow.log_param("variant", variant)
         mlflow.log_param("config_path", str(args.config))
-        metric = VARIANTS[variant](config)
-        mlflow.log_metric("dummy_metric", metric)
+        metrics = VARIANTS[variant](config)
+        for key, value in metrics.items():
+            mlflow.log_metric(key, value)
 
-    print(f"variant={variant} seed={seed} dummy_metric={metric!r}")
+    print(f"variant={variant} seed={seed} metrics={metrics}")
 
 
 if __name__ == "__main__":

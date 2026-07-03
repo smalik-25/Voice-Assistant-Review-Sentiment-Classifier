@@ -1,0 +1,35 @@
+# The sklearn linear control: the number every other variant must beat.
+# Logistic regression on TF-IDF, selected by cross-validated negative-class recall over
+# an explicit penalty and C grid. saga supports both L1 and L2 so the two are compared
+# directly; L1 also yields sparse, interpretable coefficients (used in Phase 4).
+name: sklearn-logreg-tfidf
+variant: sklearn_linear
+seed: 42
+experiment: sentiment-ablation
+tracking_uri: file:./mlruns
+
+data:
+  curated_path: data/processed/curated.parquet
+  text_col: verified_reviews
+  label_col: feedback
+  test_size: 0.2
+
+cv:
+  n_splits: 5
+  n_repeats: 3
+
+representation:
+  kind: tfidf          # tfidf (term frequency inverse document frequency) or bow
+  ngram_range: [1, 1]
+  min_df: 2            # frequency pruning, not the built-in english stop list
+  max_df: 1.0
+
+model:
+  penalty: [l1, l2]
+  C: [0.01, 0.1, 1.0, 10.0, 100.0]
+  class_weight: [null, balanced]
+  solver: saga
+  max_iter: 5000
+
+selection:
+  scoring: neg_recall   # cross-validated recall of the negative class drives selection
