@@ -158,3 +158,9 @@ disagreement-row error analysis, the separation fairness check across `variation
 coefficient interpretation, and folding the PR curve and threshold sweep into the report
 notebook. Locally, re-run the full control config and regenerate the ablation table so
 MLflow reflects the PR-AUC selection and the operating-point metrics.
+
+Also changed the ablation table to sort by held-out PR-AUC rather than F1 at 0.5, since
+F1 at the default threshold understates a model that operates at a tuned threshold. Under
+that ranking the linear control leads (PR-AUC 0.575) with the two MLPs a notch below
+(~0.52), which is the honest read: on this data the neural nets do not beat a
+properly-selected linear model.
