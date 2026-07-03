@@ -92,3 +92,41 @@ passes.
 Phase 0 and Phase 1 acceptance bars met. Stopping before step 5 (shared preprocessing and
 evaluation) for check-in, per the agreed amendments. The dedup choice (686 rows, ~22%) is
 flagged for review; it is reversible via `DEDUP_KEYS` in `src/data/load.py`.
+
+## 2026-07-02: Phase 2 shared preprocessing and evaluation (on main)
+
+Branch note: `main` was fast-forwarded to the pivot work, so development continues on
+`main`. Dedup decision confirmed (keep full-record dedup as-is).
+
+`src/features/text.py`: a `build_vectorizer` factory for TF-IDF (term frequency inverse
+document frequency) and bag-of-words counts, with `min_df`/`max_df` frequency pruning and
+configurable n-grams. No `stop_words='english'`. Sequence/pretrained representations are
+deferred to Phase 3, when a model that consumes them exists.
+
+`src/evaluation/metrics.py`: one `evaluate()` scoring everything for the negative class,
+returning precision, recall, F1, specificity, PR-AUC, and a confusion matrix. Specificity
+and precision are documented as answering different questions.
+
+`src/evaluation/cv.py`: `make_holdout` (stratified test split nothing selects on) and
+`cross_validate_negative` (RepeatedStratifiedKFold, fresh clone per fold, per-fold metrics
+with mean and std, PR-AUC from the negative-class probability).
+
+`tests/test_evaluation.py`: self-contained (synthetic data, CI-safe). Proves a
+TF-IDF+LogReg pipeline and a DummyClassifier go through the identical CV/eval, checks the
+hand-computed metric definitions, and confirms the holdout preserves prevalence. `pytest`
+green (3 passed), `ruff check src/ tests/` clean.
+
+Sanity run on the real curated set (5x3 repeated stratified k-fold, train 1907, held-out
+test 477 untouched), negative class:
+
+| model | neg recall | neg precision | neg F1 | specificity | PR-AUC |
+|---|---|---|---|---|---|
+| Dummy (most_frequent) | 0.000 | 0.000 | 0.000 | 1.000 | 0.086 |
+| TF-IDF + LogReg L2, balanced | 0.708 ± 0.06 | 0.468 | 0.562 | 0.923 | 0.581 |
+
+This is a machinery check, not the selected control. The real sklearn control (L1 vs L2,
+`C` grid, encoding and n-gram ablations) is built through the harness in the next step.
+
+Phase 2 acceptance met: every variant is scored through the same function on the same
+folds, metric definitions match the feedback. Next up: rebuild the control as a config +
+`src/models/` variant through the harness, then thin the notebook.

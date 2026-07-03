@@ -39,7 +39,7 @@ committed.
 
 - [x] Phase 0: repo and harness skeleton (config load, seed-from-config, MLflow dummy run)
 - [x] Phase 1: dataset curation and validation (label finding, Pandera, curated artifact)
-- [ ] Phase 2: shared preprocessing and evaluation (representations, eval fn, CV protocol)
+- [x] Phase 2: shared preprocessing and evaluation (representations, eval fn, CV protocol)
 - [ ] Phase 3: model variants and cross-validated ablations (sklearn, PyTorch, TensorFlow)
 - [ ] Phase 4: analysis and model selection (threshold, error analysis, fairness, interpretation)
 - [ ] Phase 5: containerized inference (FastAPI plus Docker)
