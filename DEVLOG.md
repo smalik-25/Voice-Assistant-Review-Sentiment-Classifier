@@ -54,3 +54,15 @@ interpretation work later. Selecting purely on recall overshoots on precision, w
 the motivation for the threshold work next: pick an operating point tied to
 negative-class recall >= 0.80 and report its precision and specificity cost. After that,
 the deep-learning variants.
+
+## 2026-07-03: Narrative report notebook
+
+Rewrote the notebook as a thin report (`notebooks/report.ipynb`) that holds no modeling
+logic of its own. It imports from `src/` for curation, preprocessing, and evaluation, and
+attributes model selection to the harness and MLflow. It characterizes the label, records
+the `DummyClassifier` floor through the shared `evaluate`, and presents the selected linear
+control (TF-IDF, L1, balanced) via the shared cross-validation and held-out evaluation.
+Verified to run top to bottom with `jupyter nbconvert --execute`. Held-out control on the
+untouched test set: negative-class recall 0.63, precision 0.37, specificity 0.90,
+PR-AUC 0.585, against a Dummy floor of 0. The empty `app/` placeholder is dropped (serving
+lives under `src/serving/`).
