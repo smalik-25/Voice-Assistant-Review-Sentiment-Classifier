@@ -1,0 +1,7 @@
+# No-op smoke config. Proves the harness loads a config, seeds from it, and logs to
+# MLflow. Running this twice with the same seed yields the same dummy_metric.
+name: noop-smoke
+variant: noop
+seed: 42
+experiment: harness-smoke
+tracking_uri: file:./mlruns
