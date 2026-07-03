@@ -164,3 +164,36 @@ F1 at the default threshold understates a model that operates at a tuned thresho
 that ranking the linear control leads (PR-AUC 0.575) with the two MLPs a notch below
 (~0.52), which is the honest read: on this data the neural nets do not beat a
 properly-selected linear model.
+
+## 2026-07-03: Phase 4 analysis (interpretation, fairness, disagreements)
+
+Added `src/evaluation/interpret.py`, `fairness.py`, and `error_analysis.py`, each tested,
+and ran them on the selected linear model.
+
+Interpretation. The negative-driving words are negation and complaint terms (not, didn,
+back, poor, return, sucks, meh, stopped); positive-driving are praise (love, great, easy,
+works, amazing, best). The selected L2 model is dense (1,839 nonzero coefficients) and its
+top lists carry filler like "my", "an", "so". An L1 model at the same C is 85% sparse (267
+nonzero) with a cleaner negative list (awful, poor, stopped, useless, garbage, return,
+within, siri). This is the concrete case for L1 on the explainability goal: a much shorter
+list of words carries the signal, so the model is easier to read, at comparable ranking.
+
+Fairness as separation across device `variation`, at the operating threshold. The
+false-positive rate is consistent across groups (spread ~0.02). Negative recall varies more
+(spread ~0.20 among the three variations with at least five negatives), but most variations
+have only three to six negative reviews, so per-group recall is noisy and a couple of tiny
+groups swing to 0.0 or 1.0 on three examples. The honest conclusion is that the rare
+negative class makes per-device fairness estimates unreliable, reported with counts rather
+than overclaimed as a disparity.
+
+Disagreements with the star label. The model diverges from the threshold label mostly in
+one direction: 56 held-out reviews are high-star but the model reads their text as negative,
+versus 9 low-star reviews the model reads as positive. The high-star flags often catch real
+complaint language the stars gloss over (a 5-star review whose text says the device
+"stopped replying to my requests"); the low-star misses are terse or sarcastic ("like
+having another kid in the house; I have to constantly repeat myself"), which a bag-of-words
+model does not catch. These are the error-analysis cases where the text model is sometimes
+more right than the label, and where it is predictably wrong.
+
+Remaining Phase 4: fold the PR curve, the threshold sweep, and these three analyses into the
+report notebook as figures, then Phase 4 is complete.
