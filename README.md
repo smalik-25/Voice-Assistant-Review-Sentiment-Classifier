@@ -1,5 +1,8 @@
 # Voice Assistant Review Sentiment Classifier
 
+**Live demo:** https://smalik25-voice-assistant-review-sentiment-classifier.hf.space (paste a
+review and get a prediction; `/docs` for the API).
+
 I predict a binary sentiment label for Amazon Alexa reviews from their text, and I built the
 whole lifecycle around it: curating and validating the data, a config-driven harness that
 runs cross-validated experiments across scikit-learn, PyTorch, and TensorFlow, a
