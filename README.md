@@ -41,6 +41,6 @@ committed.
 - [x] Phase 2: shared preprocessing and evaluation (representations, eval fn, CV protocol)
 - [x] Phase 3: model variants and cross-validated ablations (sklearn, PyTorch, TensorFlow)
 - [x] Phase 4: analysis and model selection (threshold, error analysis, fairness, interpretation)
-- [ ] Phase 5: containerized inference (FastAPI plus Docker)
-- [ ] Phase 6: drift monitoring
+- [x] Phase 5: containerized inference (FastAPI plus Docker)
+- [x] Phase 6: drift monitoring
 - [ ] Phase 7: documentation, CI, lifecycle writeup

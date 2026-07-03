@@ -205,3 +205,47 @@ Phase 4 complete: principled PR-AUC selection, a threshold operating point tied 
 recall >= 0.80, error analysis on the disagreement rows, the separation fairness check, and
 coefficient interpretation, all presented in the report. Next is Phase 5 (containerized
 FastAPI inference).
+
+## 2026-07-03: Phase 5 containerized inference
+
+`src/serving/export_model.py` fits the selected model (L2, C=10, unweighted; frozen in
+`configs/serve_model.yaml`) on the curated data, computes the operating threshold on
+out-of-fold predictions, and saves a self-contained bundle to `models/model.joblib`
+(gitignored): a plain scikit-learn pipeline plus the threshold and metadata, so it loads
+with scikit-learn alone. Verified: threshold 0.098 on the full curated set.
+
+`src/serving/app.py` is a standalone FastAPI service (imports only the slim serving stack)
+with `/health` and `/predict`. Predictions apply the operating threshold, not 0.5. Verified
+against the real bundle: "it stopped working ... support was useless" scores negative
+(p_neg 0.91), "love my echo, works great" positive (0.00), "returned it, kept losing wifi"
+negative (0.60). `tests/test_serving.py` covers health, predict, and the no-model 503 via
+TestClient; `ruff` and `pytest` green.
+
+`Dockerfile` installs only `requirements-serve.txt` (no training or DL stack), copies
+`app.py` and the bundle, and runs uvicorn; `docker-compose.yml` is the optional local
+runner; `src/serving/README.md` documents the rebuild-from-config-and-seed steps. The model
+is reproducible from `configs/serve_model.yaml` plus the seed. Note: `docker build` itself
+was not run in this environment (no Docker daemon); it needs a local build to confirm, which
+is the last piece of the Phase 5 acceptance bar.
+
+(Confirmed after: `docker build` succeeded locally and the container serves on port 8000.)
+
+## 2026-07-03: Phase 6 drift monitoring
+
+`src/monitoring/features.py` computes three drift signals with the fitted serving pipeline:
+the negative-class score, review length, and out-of-vocabulary rate. `drift.py` measures
+drift per feature with PSI as the trigger (threshold 0.2) and a KS test as a reported second
+opinion (PSI is stable across batch sizes; KS over-fires on large batches).
+`build_reference.py` stores the training-population reference to `models/drift_reference.json`
+(gitignored), and `check.py` compares a batch, prints a JSON report, and exits non-zero on
+drift so it can run as a scheduled job with alerting on the exit code.
+
+Verified on simulated batches: a clean sample of curated reviews reports no drift (exit 0);
+a batch with out-of-vocabulary tokens appended is flagged (review_length PSI 2.4, oov_rate
+PSI 11.6), while the negative-score distribution correctly stays put (PSI 0.04). Tests in
+`tests/test_monitoring.py`; `ruff` and `pytest` green.
+
+`src/monitoring/README.md` is the design doc: what is monitored, the PSI thresholds, what an
+alert means, the sustained-drift retraining trigger, and the honest framing that this is
+designed-and-implemented monitoring with no live production traffic. Phase 6 acceptance bar
+met. Next is Phase 7 (README lifecycle writeup, CI, architecture diagram).
