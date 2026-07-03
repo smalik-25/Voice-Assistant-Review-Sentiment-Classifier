@@ -1,4 +1,7 @@
-# Phase 0: Label and baseline investigation
+# Phase 1: Label and baseline investigation
+
+**Exact label mapping: `feedback == 1` if and only if `rating >= 3` (ratings 1 to 2 map
+to 0, ratings 3 to 5 map to 1), with no exceptions in the data.**
 
 Data: `data/raw/amazon_alexa.tsv`, 3150 rows, 5 columns (`rating`, `date`,
 `variation`, `verified_reviews`, `feedback`).
