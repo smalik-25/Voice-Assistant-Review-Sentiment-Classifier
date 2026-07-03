@@ -1,0 +1,9 @@
+# Optional: run the inference service locally. Build the model bundle first with
+# `python -m src.serving.export_model`, then `docker compose up --build`.
+services:
+  serve:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=models/model.joblib

@@ -1,0 +1,27 @@
+# The model that gets served. These are the hyperparameters the PR-AUC ablation selected
+# in configs/sklearn_logreg_tfidf.yaml (logistic regression on TF-IDF, L2, C=10,
+# unweighted), frozen here as single values so the serving artifact rebuilds deterministically
+# from this config plus the seed. liblinear solves L2 fast and deterministically.
+name: serve-model
+seed: 42
+
+data:
+  curated_path: data/processed/curated.parquet
+  text_col: verified_reviews
+  label_col: feedback
+
+representation:
+  kind: tfidf
+  ngram_range: [1, 1]
+  min_df: 2
+  max_df: 1.0
+
+model:
+  penalty: l2
+  C: 10
+  class_weight: null
+  solver: liblinear
+  max_iter: 2000
+
+selection:
+  target_recall: 0.80
