@@ -1,6 +1,9 @@
 # Data (never commit the dataset)
 data/raw/
 
+# Local build helper (notebook is the source of truth)
+build_notebook.py
+
 # Python
 __pycache__/
 *.pyc
