@@ -114,3 +114,21 @@ Hugging Face Docker Space: `deploy/hf_space/` has the Space Dockerfile (same sli
 port 7860), the Space README with its frontmatter, and `DEPLOY.md` with the assemble-and-push
 steps. The Space repo carries the small model bundle; the raw dataset never ships. The plan
 is to push it, then link the live URL from this README and the site.
+
+## How solid is the finding
+
+The whole story leans on the linear model's PR-AUC (0.575) beating the MLPs (about 0.52), so I
+went back and checked whether that gap is real. The test set has only 41 negatives, so I
+bootstrapped the held-out PR-AUC: resample the test rows with replacement, recompute, take a
+95% interval. `src/evaluation/bootstrap.py` does the per-variant interval and a paired
+resample (same rows for both models) to compare two variants; each variant now saves its
+held-out predictions through the harness so the comparison runs on identical rows, and
+`bootstrap_report.py` prints it.
+
+The control's PR-AUC interval is [0.42, 0.72], which is wide, and the MLPs sit inside it. The
+paired comparison confirms it: control minus PyTorch is +0.049 with a 95% interval of
+[-0.026, +0.124], and control minus TensorFlow is +0.052 [-0.024, +0.128]. Both straddle zero,
+so neither gap is significant, though the control wins about 90% of resamples so it does lean
+better. Against the baseline it is unambiguous (+0.489 [+0.346, +0.623], every resample). So I
+stopped saying the linear model beats the neural nets and started saying it matches them at a
+fraction of the complexity, which is the defensible claim on data this small.

@@ -22,9 +22,12 @@ accuracy is a trap. A model that predicts "positive" for everything already scor
 low nineties. I report everything against that majority baseline, negative class first.
 
 The finding I care about: once I selected models properly (on PR-AUC, not raw recall), the
-regularized linear model ranked negatives as well as or better than the deep learning
-variants. The PyTorch and TensorFlow MLPs came out within a few thousandths of each other
-and a notch below the linear control. On this data, the extra complexity did not earn its
+regularized linear model ranked negatives as well as the deep learning variants. The PyTorch
+and TensorFlow MLPs came out within a few thousandths of each other, just behind the linear
+control. But I put a bootstrap confidence interval on the control's PR-AUC (0.575) and it was
+wide, [0.42, 0.72], because the test set has only about 40 negatives. The MLPs sit inside
+that interval, so the honest read is that the linear model matches them rather than clearly
+beating them, and it is far simpler. On this data, the extra complexity did not earn its
 place. That is the result, not a disappointment.
 
 ## Lifecycle
@@ -91,6 +94,14 @@ Held-out results, negative class, ranked by PR-AUC:
 | PyTorch MLP | 0.526 | 0.415 | 0.500 | 0.961 |
 | TensorFlow MLP | 0.523 | 0.390 | 0.500 | 0.963 |
 | majority baseline | 0.086 | 0.000 | 0.000 | 1.000 |
+
+How solid is that ordering? Not very, and I checked rather than assumed. A bootstrap
+confidence interval on the control's PR-AUC is [0.42, 0.72] on the 41 test negatives, and the
+MLPs fall inside it. A paired bootstrap confirms it: control minus each MLP is about +0.05
+with a 95% interval that includes zero (the control wins roughly 90% of resamples, so it leans
+better without clearing significance). So I do not claim the linear model beats them, only that
+it matches them at a fraction of the complexity. `src/evaluation/bootstrap_report.py` runs the
+per-variant intervals and the paired comparison from each variant's saved held-out predictions.
 
 ### The chosen model and its operating point
 
