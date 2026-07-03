@@ -1,0 +1,13 @@
+# CI dependencies: enough to lint, run the tests, and do a smoke experiment, without the
+# heavy deep-learning stack. The neural tests skip themselves when torch/tensorflow are
+# absent, so CI stays fast. Full ablation runs happen locally.
+-r requirements-serve.txt
+
+pandera==0.32.1
+mlflow==3.14.0
+pyarrow==24.0.0
+PyYAML==6.0.2
+scipy==1.15.3
+pytest==9.1.1
+ruff==0.15.20
+httpx==0.28.1

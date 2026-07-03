@@ -2,9 +2,9 @@
 
 ## Source
 
-Kaggle, "Amazon Alexa Reviews" (`sid321axn/amazon-alexa-reviews`). Place the raw file
-at `data/raw/amazon_alexa.tsv`. It is gitignored and never committed. No download code
-lives in the repo; fetch it manually from Kaggle.
+Kaggle, "Amazon Alexa Reviews" (`sid321axn/amazon-alexa-reviews`). I keep the raw file at
+`data/raw/amazon_alexa.tsv` and never commit it. There is no download code in the repo;
+grab it from Kaggle by hand.
 
 Raw shape: 3,150 rows, 5 columns.
 
@@ -18,16 +18,16 @@ Raw shape: 3,150 rows, 5 columns.
 
 ## The label is a thresholded rating
 
-`feedback == 1` if and only if `rating >= 3`. Ratings 1 and 2 are negative, 3 through 5
-are positive, with no exceptions in the raw data. The label carries no information beyond
-the star threshold, so "sentiment" here is a thresholded star count. The Pandera schema
-(`src/data/schema.py`) enforces this rule, so a future data refresh that broke it would
-fail validation rather than pass silently.
+`feedback == 1` if and only if `rating >= 3`. Ratings 1 and 2 are negative, 3 through 5 are
+positive, with no exceptions in the raw data. So the label carries nothing beyond the star
+threshold, and "sentiment" here is really a thresholded star count. The Pandera schema in
+`src/data/schema.py` enforces this, so a future refresh that broke the rule would fail
+validation instead of passing quietly.
 
-## Curation
+## What curation does
 
-Built by `python -m src.data.build_curated`, which loads raw, curates, validates, and
-writes the artifact. Steps and their effect on the current raw file:
+`python -m src.data.build_curated` loads the raw file, curates it, validates it, and writes
+the artifact. On the current data:
 
 | step | rows removed | rows remaining |
 |---|---|---|
@@ -37,20 +37,19 @@ writes the artifact. Steps and their effect on the current raw file:
 
 Curated set: 2,384 rows, 205 negative (8.6%), content hash `543047b2d164`.
 
-Deduplication drops rows that are identical across every column (`rating`, `date`,
-`variation`, `verified_reviews`, `feedback`). The reason is leakage: identical records
-that land in different cross-validation folds would let a model see test rows during
-training and inflate the scores. The tradeoff is that a few of these may be distinct
-customers who wrote the same short text (for example "Love it!") on the same day for the
-same device; treating them as duplicates removes them. The effect on balance is small:
-positive share moves from 92.3% to 91.4%, and 32 of the 686 removed rows are negative.
-This decision is reversible by changing `DEDUP_KEYS` in `src/data/load.py`.
+The dedup drops rows that are identical across every column. I do it to prevent leakage: an
+identical record showing up in two different cross-validation folds would let a model see
+test data during training. The cost is that a few of these might be different customers who
+wrote the same short text ("Love it!") on the same day for the same device, and I am
+treating them as duplicates. The effect on balance is small (positive share goes from 92.3%
+to 91.4%, and only 32 of the 686 removed rows are negative). If I ever want to revisit it, it
+is one line: `DEDUP_KEYS` in `src/data/load.py`.
 
-Imbalance is left intact in the curated set. The imbalance strategy (class weights vs
-resampling) is a per-variant choice made during the ablations, not baked into the data.
+I leave the imbalance alone in the curated set. Whether to reweight or resample is a
+per-variant choice I make during the experiments, not something baked into the data.
 
-## Artifact
+## The artifact
 
-`data/processed/curated.parquet` (gitignored). Rebuild it any time from raw with the
-command above; the content hash lets you confirm two builds match. Nothing under `data/`
-is committed.
+`data/processed/curated.parquet`, gitignored. Rebuild it any time from raw with the command
+above; the content hash tells me whether two builds match. Nothing under `data/` is
+committed.

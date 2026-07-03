@@ -1,15 +1,15 @@
-# Phase 1: Label and baseline investigation
+# Label and baseline notes
 
-**Exact label mapping: `feedback == 1` if and only if `rating >= 3` (ratings 1 to 2 map
-to 0, ratings 3 to 5 map to 1), with no exceptions in the data.**
+The one thing to know before anything else: `feedback == 1` if and only if `rating >= 3`.
+Ratings 1 and 2 map to 0, ratings 3 to 5 map to 1, with no exceptions in the data.
 
-Data: `data/raw/amazon_alexa.tsv`, 3150 rows, 5 columns (`rating`, `date`,
-`variation`, `verified_reviews`, `feedback`).
+Source: `data/raw/amazon_alexa.tsv`, 3,150 rows, 5 columns (`rating`, `date`, `variation`,
+`verified_reviews`, `feedback`).
 
-## The label is a thresholded star rating (confirmed)
+## The label is a thresholded star rating
 
-`feedback` is a deterministic function of `rating`. Every rating maps to exactly one
-feedback value, with no exceptions:
+`feedback` is a deterministic function of `rating`. Every rating maps to exactly one feedback
+value:
 
 | rating | feedback | count |
 |---|---|---|
@@ -19,24 +19,23 @@ feedback value, with no exceptions:
 | 4 | 1 | 455 |
 | 5 | 1 | 2286 |
 
-So the rule is: rating in {1, 2} gives `feedback = 0`, rating in {3, 4, 5} gives
-`feedback = 1`. The check `(rating in {1,2}) == (feedback == 0)` holds for all 3150
-rows. "Sentiment" here is not a human judgment of the text, it is a hard threshold on
-the star count. The task is really "recover the star-rating threshold from free text,"
-and the rows worth studying are the ones where the text and the stars disagree.
+The check `(rating in {1,2}) == (feedback == 0)` holds for all 3,150 rows. So "sentiment"
+here is not a judgment of the text, it is a hard cut on the star count. The real task is
+recovering that threshold from free text, and the rows I care about are the ones where the
+text and the stars disagree.
 
 ## Imbalance
 
-Positive share is 0.9184 (2893 positive, 257 negative). The negative class is 8.2% of
-the data. This is why accuracy is the wrong headline metric and why `stratify` matters
-later: an unlucky split could badly distort estimates for a class this rare.
+Positive share is 0.9184 (2,893 positive, 257 negative), so the negative class is about 8.2%
+of the data. That is why accuracy is the wrong headline, and why I stratify the splits: an
+unlucky random split could badly distort the estimates for a class this rare.
 
-## Data quality note
+## A data-quality note
 
-`verified_reviews` has 1 true NaN and 79 blank (empty-string) entries, so 80 rows carry
-no usable text. These get dropped before modeling.
+`verified_reviews` has 1 true NaN and 79 blank entries, so 80 rows carry no usable text. I
+drop them before modeling.
 
-## Majority baseline floor (DummyClassifier, most_frequent)
+## The majority baseline
 
 Predicting "positive" for everything:
 
@@ -47,26 +46,19 @@ Predicting "positive" for everything:
 | negative-class recall | 0.0000 |
 | specificity | 1.0000 |
 
-This is the floor every real model must beat. For comparison, an accuracy of 0.946
-sits only about 3 points above this do-nothing baseline, which is the whole reason
-accuracy cannot lead. The floor gets negative-class recall of 0, so any recall on the minority
-class is progress that accuracy alone hides.
+This is the floor every real model has to beat. An accuracy of 0.946 sits only about 3 points
+above it, which is the whole reason accuracy can't lead. The floor catches zero negatives, so
+any recall on the minority class is progress that accuracy alone would hide.
 
-## Disagreement examples captured
+## Disagreement rows I set aside
 
-69 candidate rows where text and star rating pull in opposite directions are saved to
-`reports/phase0_disagreements.csv` (30 gushing text at 1 to 2 stars, 39 complaint-laden
-text at 4 to 5 stars). These are the error-analysis material for later phases. A few:
+I saved 69 rows where the text and the stars pull in opposite directions to
+`reports/phase0_disagreements.csv` (30 with gushing text at 1 to 2 stars, 39 with complaint
+text at 4 to 5 stars). These are the error-analysis material for later. A few:
 
-- `[1 star, feedback 0]` "great product, but useless overall. Too many unnecessary
-  features."
+- `[1 star, feedback 0]` "great product, but useless overall. Too many unnecessary features."
 - `[1 star, feedback 0]` "Great product but returning for new Alexa Dot. Refurbished is
   already giving me problems with connection."
-- `[4 stars, feedback 1]` "We really only use this as a speaker to stream music. We've
-  had it 7 months and it's just kinda useless."
+- `[4 stars, feedback 1]` "We really only use this as a speaker to stream music. We've had it
+  7 months and it's just kinda useless."
 - `[4 stars, feedback 1]` "The outlet does not work with it. Was disappointed in that."
-
-## Acceptance bar
-
-Met: the label-to-rating mapping is documented, the majority baseline numbers are
-recorded, and disagreement examples are captured for later phases.

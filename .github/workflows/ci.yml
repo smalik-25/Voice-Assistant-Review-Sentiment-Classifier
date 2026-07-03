@@ -1,0 +1,49 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements-ci.txt
+      - name: Lint
+        run: ruff check src/ tests/
+      - name: Tests
+        run: pytest -q
+      - name: Smoke run (config load, seed, MLflow)
+        run: python -m src.run_experiment --config configs/noop.yaml
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build a placeholder model so the image has an artifact to copy
+        run: |
+          pip install -r requirements-serve.txt joblib
+          python - <<'PY'
+          import os
+          import joblib
+          from sklearn.feature_extraction.text import TfidfVectorizer
+          from sklearn.linear_model import LogisticRegression
+          from sklearn.pipeline import Pipeline
+
+          texts = ["broke terrible useless"] * 10 + ["love great works"] * 30
+          y = [0] * 10 + [1] * 30
+          pipe = Pipeline([
+              ("tfidf", TfidfVectorizer(min_df=1)),
+              ("clf", LogisticRegression(max_iter=1000)),
+          ]).fit(texts, y)
+          os.makedirs("models", exist_ok=True)
+          joblib.dump({"pipeline": pipe, "threshold": 0.3, "classes": [0, 1]}, "models/model.joblib")
+          PY
+      - name: Docker build
+        run: docker build -t alexa-sentiment .
