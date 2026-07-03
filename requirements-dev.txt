@@ -1,0 +1,26 @@
+# Full development stack: everything needed to curate, validate, train, ablate,
+# track, and report. Not installed into the serving container.
+-r requirements-serve.txt
+
+# Data validation and experiment tracking
+pandera==0.32.1
+mlflow==3.14.0
+pyarrow==24.0.0
+PyYAML==6.0.2
+
+# Stats, figures, notebook
+scipy==1.15.3
+plotly==6.8.0
+nbformat==5.10.4
+nbconvert==7.17.1
+ipykernel==7.3.0
+
+# Quality
+pytest==9.1.1
+ruff==0.15.20
+
+# Deep learning (used from Phase 3 onward). Pins are finalized when these are
+# first installed locally for the ablation runs; kept here so the stack is declared.
+torch==2.5.1
+tensorflow==2.18.0
+transformers==4.46.3
