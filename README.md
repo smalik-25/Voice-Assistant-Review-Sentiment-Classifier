@@ -40,7 +40,7 @@ committed.
 - [x] Phase 1: dataset curation and validation (label finding, Pandera, curated artifact)
 - [x] Phase 2: shared preprocessing and evaluation (representations, eval fn, CV protocol)
 - [x] Phase 3: model variants and cross-validated ablations (sklearn, PyTorch, TensorFlow)
-- [ ] Phase 4: analysis and model selection (threshold, error analysis, fairness, interpretation)
+- [x] Phase 4: analysis and model selection (threshold, error analysis, fairness, interpretation)
 - [ ] Phase 5: containerized inference (FastAPI plus Docker)
 - [ ] Phase 6: drift monitoring
 - [ ] Phase 7: documentation, CI, lifecycle writeup

@@ -195,5 +195,13 @@ having another kid in the house; I have to constantly repeat myself"), which a b
 model does not catch. These are the error-analysis cases where the text model is sometimes
 more right than the label, and where it is predictably wrong.
 
-Remaining Phase 4: fold the PR curve, the threshold sweep, and these three analyses into the
-report notebook as figures, then Phase 4 is complete.
+Folded all of it into the report notebook (`notebooks/report.ipynb`): the selected control,
+the operating point, a precision-recall curve, the threshold sweep with the operating point
+marked, the L1-vs-L2 coefficient comparison, the separation fairness table, and the
+disagreement rows. The notebook holds no modeling logic of its own; it calls into `src/`
+throughout. Verified end to end with `jupyter nbconvert --execute` (no errors, 25 cells).
+
+Phase 4 complete: principled PR-AUC selection, a threshold operating point tied to negative
+recall >= 0.80, error analysis on the disagreement rows, the separation fairness check, and
+coefficient interpretation, all presented in the report. Next is Phase 5 (containerized
+FastAPI inference).
