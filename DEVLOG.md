@@ -128,3 +128,33 @@ rather than selecting on raw recall.
 Phase 3 acceptance bar met: control plus a PyTorch and a TensorFlow variant run and log
 cleanly, the parity pair is present, and the ablation table is generated from MLflow. The
 text-CNN, BiLSTM, and DistilBERT variants remain as enhancements beyond the bar.
+
+## 2026-07-03: Phase 4, selection metric and operating point
+
+Fixed the selection defect the Phase 3 table exposed. The control now selects on PR-AUC
+(threshold-independent negative-class ranking) instead of raw recall, with negative recall
+kept as a recorded secondary metric. Selecting on PR-AUC picks a well-ranked model
+(L2, C=10, unweighted; cv PR-AUC 0.57) instead of the degenerate recall-maximizing model
+(PR-AUC 0.28). Properly selected, the linear control (PR-AUC ~0.57) now ranks negatives as
+well as or better than the MLPs (~0.52), which restores the expected finding: complexity
+does not earn its place here.
+
+Added `src/evaluation/threshold.py`: `choose_threshold` picks the highest threshold whose
+negative recall meets a target (default 0.80), with `evaluate_at_threshold` and a `sweep`
+for plotting. The control run now reports an operating point chosen on out-of-fold TRAIN
+predictions (via `cross_val_predict`), then applied to the untouched test set, so the
+threshold is never tuned on the test data. Reduced-grid demonstration:
+
+- default 0.5 threshold: negative recall 0.24, precision 0.71, specificity 0.99 (too
+  conservative under imbalance).
+- operating point (threshold ~0.077, chosen on OOF train): negative recall 0.76 on the
+  test set, precision 0.37, specificity 0.88. The trade is explicit: catching about
+  three quarters of negative reviews means most negative flags are false alarms and about
+  12% of positive reviews are wrongly flagged.
+
+`tests/test_threshold.py` covers the operating-point logic; `ruff` and `pytest` green (the
+full path verified through `run_experiment` on a reduced grid). Remaining Phase 4:
+disagreement-row error analysis, the separation fairness check across `variation`, L1
+coefficient interpretation, and folding the PR curve and threshold sweep into the report
+notebook. Locally, re-run the full control config and regenerate the ablation table so
+MLflow reflects the PR-AUC selection and the operating-point metrics.

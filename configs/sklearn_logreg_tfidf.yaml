@@ -32,4 +32,8 @@ model:
   max_iter: 5000
 
 selection:
-  scoring: neg_recall   # cross-validated recall of the negative class drives selection
+  # Select on threshold-independent PR-AUC (negative class). Selecting on raw recall
+  # produced a degenerate high-recall, low-precision model; the operating point (a
+  # threshold hitting negative recall >= 0.80) is chosen separately, in the sweep.
+  scoring: pr_auc
+  target_recall: 0.80
