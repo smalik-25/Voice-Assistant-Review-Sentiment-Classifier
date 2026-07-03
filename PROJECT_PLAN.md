@@ -1,229 +1,264 @@
-# Project Plan: Alexa Review Sentiment Classifier (portfolio rebuild)
+# Project Plan: Voice Assistant Review Sentiment Classifier
 
 ## 1. Goal
 
-Turn a thin INFO 371 class assignment into a portfolio project that matches the
-rigor of the top projects on sam-malik.com. The identity of this project is
-**modeling judgment and label skepticism**, not infrastructure. It is the project
-that proves I understand what the metrics mean, what the label actually is, and why a
-regularized linear model is the right call. It deliberately stays lean: no Ray, no
-Airflow, no warehouse. Project #01 (Sneaker Price MLOps Pipeline) already owns the
-infra story.
+Build a full ML lifecycle project on the Amazon Alexa reviews dataset, from dataset
+curation through containerized deployment and drift monitoring. The identity of the
+project is **reproducible experimentation infrastructure**: a config-driven harness
+that makes cross-validated, cross-framework NLP ablations repeatable, with the winning
+model curated, served, and monitored. It targets a role focused on reproducibility and
+experimentation infrastructure.
 
-## 2. Positioning
+Target resume description this project must support:
 
-Two existing projects create overlap risk, so the differentiation has to be explicit.
+> Designed a full ML training workflow from dataset curation through model deployment:
+> curated and validated labeled training datasets, ran cross-validated ablation studies
+> comparing PyTorch and TensorFlow architectures, measured precision, recall, and
+> F1-score across model variants, and containerized the inference pipeline for
+> reproducible deployment. Documented the full ML lifecycle from data preparation
+> through production monitoring.
 
-- vs #01 (MLOps pipeline): that one is about distributed training and orchestration.
-  This one is about statistical reasoning on a hard, imbalanced problem. Keep it
-  single-notebook plus a thin app, no pipeline tooling.
-- vs #09 (Privacy-Aware Fashion Review Risk Detector): same technique family (sparse
-  text features into a regularized linear model, recall on the minority class). The
-  three things that make this project distinct:
-  1. **Label interrogation.** The `feedback` label is almost certainly a hard
-     threshold on the `rating` column, so "sentiment" is really "high star rating."
-     The interesting cases are where text and stars disagree. This is the same move
-     as the fitness project (distrust the number, then decompose it).
-  2. **Encoding and regularization as a deliberate comparison**, named correctly,
-     with explicit penalty types.
-  3. **Fairness framed as separation across device variations**, which also doubles
-     as the further analysis the class version never delivered.
+## 2. Honesty guardrails (read before writing any claim)
 
-## 3. Current state (read this before touching anything)
+These keep the project defensible in an interview. Violating them turns a strong
+project into one that collapses under a single follow-up question.
 
-What exists today:
+- **Deep learning will likely lose to the linear baseline** on this dataset (~3,150
+  rows, ~250 negatives). That is the finding, not a failure. Frame it as an ablation
+  result. Do not claim a neural model improved performance unless the logged runs show
+  it. The one variant that can plausibly win is a fine-tuned DistilBERT (transfer
+  learning is the small-data exception).
+- **"Production monitoring" is not literally true** without live traffic. Build a real
+  drift-monitoring module and a documented monitoring/alerting design, and describe it
+  as "designed and implemented drift monitoring for the inference service," never as
+  "monitored production traffic."
+- **The framework comparison is a parity/ablation exercise**, not a contest to crown a
+  framework. Be ready to answer "why both PyTorch and TensorFlow": to show the harness
+  is framework-agnostic and the results are reproducible across backends.
+- **Metrics are reported against a majority baseline**, minority-class first. Accuracy
+  on a ~92% positive label is near the majority floor and is never the headline.
 
-- **Data-loading notebook** (11 cells). Cells 0 to 9 download the Kaggle Amazon Alexa
-  reviews dataset via `kagglehub`, load `amazon_alexa.tsv`, print shape and class
-  balance, drop rows with missing `verified_reviews`, and draw one Plotly histogram of
-  the label. This part is fine as scaffolding.
-- **One giant modeling cell** (cell 10). It re-loads the data, does a train/val/test
-  split with `stratify`, vectorizes with `CountVectorizer(stop_words='english')`,
-  loops logistic C over {0.1, 1, 10} and RF `n_estimators` over {50, 100, 200}
-  selecting on negative-class recall, then refits the winner and prints accuracy,
-  precision, recall.
+## 3. Positioning
 
-Known problems in the current code (beyond the graded feedback):
+- vs #01 (Sneaker Price MLOps Pipeline): that project is distributed training and
+  orchestration (Ray, Spark, Airflow) on tabular data. This project is NLP,
+  cross-framework ablation, containerized serving, and drift monitoring. Different
+  competency axis. Keep this one framework-and-serving focused, not orchestration
+  focused, so they do not blur.
+- vs #09 (Privacy-Aware Fashion Review Risk Detector): that is a single classical text
+  classifier. This one adds the full lifecycle (curation, cross-framework ablation,
+  deployment, monitoring) and the reproducibility harness. The classical model here is
+  just the control.
 
-- **Leakage / inconsistency in vectorization.** The vectorizer is `fit_transform` on
-  `X_train` for the selection phase, then `fit_transform` again on `X_train_full`
-  before the test transform. Selection and final fit therefore run on different
-  feature spaces. This needs to become a single `Pipeline` fit only on training folds.
-- **Accuracy is reported on a ~92% majority-positive label**, so 0.946 accuracy is
-  barely above a majority-class baseline. There is no `DummyClassifier` floor.
-- **Only negative-class recall drives selection**, with no precision/specificity
-  tradeoff, no threshold tuning, no PR curve.
-- **No markdown narrative.** It reads as a script.
+The analytical spine that keeps it honest, carried from the earlier scope:
+- **Label skepticism.** `feedback` is almost certainly a hard threshold on `rating`,
+  so "sentiment" is a thresholded star rating. Confirm in Phase 1 and build around it.
+  The interesting cases are text/rating disagreements.
+- **Honest baselines and minority-class metrics.** The linear model is the control
+  every deep variant must beat.
 
-Reported final results from the class report: accuracy 0.946, precision 0.758, recall
-0.490 on the negative class. The recall of 0.49 (the model misses half the negatives)
-is the real headline and the thing to fix or at least honestly explain.
+## 4. Current state
+
+What exists:
+- `reference/original_notebook.ipynb`: a data-loading notebook plus one script-style
+  modeling cell (train/val/test split, `CountVectorizer(stop_words='english')`, manual
+  loops over logistic C and RF n_estimators, prints accuracy/precision/recall).
+- The original code has a vectorizer leakage bug (fit separately for selection and
+  final fit), reports accuracy on a ~92% positive label, and has no baseline, no
+  threshold analysis, no PR analysis, and no markdown narrative.
+- Reported class results: accuracy 0.946, precision 0.758, negative-class recall
+  0.490.
 
 Reference material in the repo:
-- `reference/original_notebook.ipynb` — the current notebook.
-- `reference/original_report.pdf` — the class deliverable.
-- `INSTRUCTOR_FEEDBACK.md` — the full defect list.
+- `INSTRUCTOR_FEEDBACK.md`: the full graded defect list. Every rigor point still
+  applies to how the classical control is built and how all metrics are reported.
+- `reference/original_report.pdf`: the class deliverable.
 
-## 4. The core angle (do not lose this)
+Nothing from the original modeling code is reused directly. It becomes the sklearn
+control inside the new harness.
 
-Confirm and then build around one finding: **`feedback` is a deterministic function
-of `rating`.** If true (verify in Phase 0), the label is not human sentiment, it is a
-thresholded star rating. Everything follows from that:
+## 5. Stack
 
-- The task is really "recover the star-rating threshold from free text."
-- The genuinely interesting rows are the disagreements: gushing text with a low star
-  rating, or a terse "it broke" with a high one. These are where a text model can add
-  something a rating cannot, and they are the error-analysis material.
-- Heavy imbalance plus a proxy label is exactly why accuracy is the wrong headline
-  metric and why the precision/recall/specificity distinction matters.
+- Core: Python 3.11+, scikit-learn, pandas, numpy.
+- Deep learning: PyTorch, TensorFlow/Keras, Hugging Face Transformers (DistilBERT).
+- Data validation: Pandera.
+- Experiment tracking: MLflow.
+- Serving: FastAPI plus a Dockerfile. Optional docker-compose.
+- Monitoring: a drift-detection module (PSI/KS), scipy for the tests.
+- Quality: pytest, GitHub Actions, plotly for figures.
 
-## 5. Phases
+## 6. Phases
 
-Each phase has concrete steps and an acceptance bar. After each phase: write a DEVLOG
-entry, update the README checklist, and I get a copy-paste git block (see CLAUDE.md
-git workflow). Do not move to the next phase until the acceptance bar is met.
+Each phase ends with a DEVLOG entry, a README checklist update, and a copy-paste git
+block for Sam to run (see CLAUDE.md). Do not advance until the acceptance bar is met.
 
-### Phase 0: Label and baseline investigation
+### Phase 0: Repo and harness skeleton
+
+Steps:
+1. Lay out the repo structure (section 8). Create `requirements.txt`, `.gitignore`
+   (exclude `data/raw/`, `mlruns/`, model artifacts), and a stub `README.md`.
+2. Create a `configs/` directory. Each experiment variant is a config file (dataset
+   settings, representation, model, framework, hyperparameters, seed).
+3. Create a single entrypoint (for example `src/run_experiment.py`) that reads a
+   config, runs the shared pipeline, and logs to MLflow. Set global seeds from config.
+
+Acceptance: a no-op config runs end to end, logs a dummy metric to MLflow, and is
+reproducible across two runs with the same seed.
+
+### Phase 1: Dataset curation and validation
 
 Steps:
 1. Load `data/raw/amazon_alexa.tsv`. Confirm shape, dtypes, missing values.
-2. Cross-tabulate `feedback` against `rating`. Determine the exact mapping and state
-   it plainly (expected: rating in {1,2} maps to 0, {3,4,5} maps to 1, or similar).
-3. Quantify imbalance (expected roughly 92% positive).
-4. Fit `DummyClassifier(strategy="most_frequent")` and record its accuracy, precision,
-   recall, and specificity as the floor.
-5. Surface 5 to 10 rows where text sentiment and star rating visibly disagree.
+2. **Characterize the label.** Cross-tabulate `feedback` against `rating`, document the
+   exact threshold mapping, quantify imbalance (~92% positive expected).
+3. **Validate with Pandera.** Write a schema for the curated training set (column
+   types, value ranges, non-null text, label in {0,1}) and enforce it. This is the
+   "validated labeled training datasets" claim made real.
+4. **Curation decisions, documented:** deduplicate reviews, strip empties, decide the
+   imbalance strategy (class weights vs resampling, chosen per variant later), and
+   produce a versioned curated dataset artifact (`data/processed/`, gitignored) with a
+   data card in `data/README.md`.
+5. Surface 5 to 10 text/rating disagreement rows for later error analysis.
+6. Fit `DummyClassifier(strategy="most_frequent")` and record the baseline
+   accuracy/precision/recall/specificity/F1.
 
-Acceptance: the label-to-rating mapping is documented, the majority baseline numbers
-are recorded, and disagreement examples are captured for later.
+Acceptance: label mapping documented, Pandera schema passes on the curated set, curated
+artifact and data card exist, baseline recorded, disagreement examples captured.
 
-### Phase 1: Rebuild the notebook as a narrative
-
-Steps:
-1. One imports cell at the top. Nothing imported later.
-2. Markdown sections with intent statements (one to three sentences each): Data and
-   Label, Preprocessing, Model Selection, Evaluation, Fairness, Further Analysis.
-3. Move all modeling into an `sklearn` `Pipeline(vectorizer, classifier)` so the
-   vectorizer is only ever fit on training folds. This removes the leakage and the
-   overengineered manual loop in one move.
-
-Acceptance: notebook runs top to bottom with no errors, reads as an explained
-analysis rather than a script, no vectorizer is fit outside a pipeline/CV fold.
-
-### Phase 2: Model selection, done correctly
+### Phase 2: Shared preprocessing and evaluation
 
 Steps:
-1. `GridSearchCV` (stratified k-fold) over a real grid:
-   - penalty in {l1, l2} with the `saga` solver.
-   - `C` on a log grid, for example `np.logspace(-3, 2, 12)`. If the best C sits at an
-     edge of the grid, extend the grid.
-   - `class_weight` in {None, "balanced"}.
-2. Encoding comparison, each named correctly:
-   - bag-of-words / term-frequency counts vs TF-IDF (term frequency, inverse document
-     frequency).
-   - unigram vs unigram+bigram (this directly tests the "not good" interaction claim
-     from Part I).
-   - stop-word handling: replace the built-in `english` list with frequency pruning
-     (`min_df`, `max_df`) and justify.
-3. RF contender: tune `max_depth` and `min_samples_leaf` (real bias/variance knobs),
-   not `n_estimators`. State the correct rationale: bagging reduces variance.
+1. One shared preprocessing layer per representation: TF-IDF (name it correctly, term
+   frequency inverse document frequency) and a tokenized/embedded representation for
+   the sequence models. Frequency pruning (`min_df`, `max_df`), not `stop_words=
+   'english'`.
+2. One shared evaluation function: given predictions and probabilities, return
+   precision, recall, F1, specificity, PR-AUC, and a confusion matrix, always for the
+   negative class as the class of interest.
+3. Cross-validation protocol: repeated stratified k-fold (the rare class makes a single
+   split noisy). Report mean and standard deviation across folds. Hold out a final
+   test set that no model selection touches.
 
-Acceptance: selection uses cross-validation, penalty type is explicit, grids are
-stated in advance, and the RF rationale and knobs are corrected. Expect the linear
-model to win. If it does, say so and tie it to "complexity has to earn its place."
+Acceptance: every model variant is scored through the same eval function on the same
+folds, so results are comparable. Metric definitions match the feedback (specificity vs
+precision distinguished, baseline-relative).
 
-### Phase 3: Honest evaluation on the minority class
+### Phase 3: Model variants and cross-validated ablations
 
-Steps:
-1. Confusion matrix on the held-out test set.
-2. Precision-recall curve and PR-AUC (more informative than ROC under imbalance).
-3. Threshold sweep instead of the default 0.5 cutoff. Choose an operating point tied
-   to the stated criterion (negative-class recall >= 0.80) and report what it costs in
-   precision and specificity.
-4. Report **specificity and precision side by side** and state which question each
-   answers: specificity = "how often are positive reviews wrongly flagged,"
-   precision = "how trustworthy is a negative flag." This closes the Part I metric
-   error directly.
+Build variants that plug into the harness. Suggested set:
 
-Acceptance: the report leads with baseline-relative, minority-class-aware metrics; the
-0.5 threshold is no longer treated as given; specificity vs precision is explained.
+- **sklearn (control):** Logistic Regression on TF-IDF, explicit L1 and L2, `C` on a
+  log grid. This is the number every deep model must beat.
+- **PyTorch:** MLP on TF-IDF; text-CNN on learned embeddings; DistilBERT fine-tune (HF
+  Transformers, PyTorch backend).
+- **TensorFlow/Keras:** MLP on TF-IDF (parity with the PyTorch MLP); BiLSTM on learned
+  embeddings.
 
-### Phase 4: The analyses that were promised
+Ablation axes to vary and log: representation (TF-IDF vs learned vs pretrained),
+architecture (linear/MLP/CNN/RNN/transformer), framework (the PyTorch/TensorFlow MLP
+parity pair), and imbalance handling (class weights vs focal loss vs resampling).
 
 Steps:
-1. Plotly variation-level view: predicted negative rate (and/or error rate) by device
-   `variation`. This is the further analysis the class version skipped.
-2. Reframe it as a **separation** fairness check: is negative-class recall and false
-   positive rate roughly equal across variations? Report the spread.
-3. Coefficient interpretation from the L1 model: top positive and negative words. Use
-   this to argue why L1 beats L2 for the explainability goal here.
+1. Implement each variant as a config plus a model module, cross-validated through the
+   shared harness, all runs logged to MLflow (params, metrics, seed, artifacts).
+2. Keep DL models small and regularized with early stopping. Expect overfitting on ~250
+   negatives, and document it.
+3. Produce an ablation table: variant by precision/recall/F1 (mean and std), sorted,
+   with the baseline row on top.
 
-Acceptance: one clear Plotly figure per analysis, the fairness check names the
-statistical criterion (separation), and coefficients are interpreted, not just dumped.
+Acceptance: at least the control plus one PyTorch and one TensorFlow variant run and
+log cleanly, the PyTorch/TensorFlow parity pair is present, and the ablation table is
+generated from MLflow, not hand-copied.
 
-### Phase 5: Repository hygiene
-
-Steps:
-1. `README.md` in the house style: question, approach, the label finding, honest
-   results vs baseline, what I learned. Apply the-humanizer to the prose.
-2. `requirements.txt` pinned, `.gitignore` (exclude `data/raw/`), `data/README.md`
-   with the Kaggle source and download instructions (no data committed).
-3. `.github/workflows/ci.yml` that runs the notebook end to end (`jupyter nbconvert
-   --execute`) or a smoke test, on push.
-4. `DEVLOG.md` up to date.
-
-Acceptance: a stranger can clone, read the README, follow the data instructions, and
-run CI green. Structure mirrors sneaker-intel.
-
-### Phase 6 (stretch): thin live demo
+### Phase 4: Analysis and model selection
 
 Steps:
-1. A small Streamlit app: paste a review, see the prediction, the words driving it
-   (coefficient contributions), and the recall/precision tradeoff at the chosen
-   threshold.
-2. Deploy on Streamlit Community Cloud, link from the README and the website.
+1. Select the final model honestly from the ablation table and a threshold sweep tied
+   to the success criterion (negative-class recall >= 0.80), reporting the precision and
+   specificity cost.
+2. Error analysis on the text/rating disagreement rows: where does the chosen model
+   diverge from the star label, and is it ever more right than the label.
+3. Fairness as **separation**: negative-class recall and false positive rate across
+   device `variation` groups, reported with the spread.
+4. Interpretation: coefficients for the linear model, or a lightweight attribution for
+   the chosen deep model, to explain what drives negative predictions.
 
-Acceptance: optional. Only start once Phases 0 to 5 are done and committed. The
-notebook plus README already stands alone without this.
+Acceptance: final model chosen with a principled threshold, disagreement error analysis
+present, separation check named and reported, interpretation present.
 
-### Wrap-up
+### Phase 5: Containerized inference
 
-Update the sam-malik.com project entry so the copy describes the label-skepticism
-angle and the honest metric story, not a generic "compared logreg vs RF."
+Steps:
+1. FastAPI service that loads the selected model artifact and exposes a `/predict`
+   endpoint (review text in, label plus probability out) and a `/health` endpoint.
+2. Dockerfile with pinned dependencies. Build reproducibly. Optional docker-compose to
+   run the service plus the monitoring component.
+3. A short reproducibility note: exact steps to rebuild the image and reproduce the
+   selected model from its config and seed.
 
-## 6. Feedback to fix traceability
+Acceptance: `docker build` succeeds, the container serves predictions locally, and the
+selected model is reproducible from config plus seed.
 
-Every graded defect maps to a phase. Nothing is dropped silently.
+### Phase 6: Drift monitoring
+
+Steps:
+1. A monitoring module that compares incoming request features and predicted-score
+   distributions against a stored training reference using PSI and/or a KS test, with
+   configurable alert thresholds.
+2. Expose it (a `/metrics` or `/drift` endpoint, or a scheduled check script) and log
+   drift measurements.
+3. A monitoring design doc: what is monitored, thresholds, what an alert means, and
+   what the retraining trigger would be. Framed as designed-and-implemented drift
+   monitoring, not live production monitoring.
+
+Acceptance: drift module runs on a simulated shifted batch and flags it, the design doc
+exists, and the language is honest about the absence of real production traffic.
+
+### Phase 7: Documentation, CI, lifecycle writeup
+
+Steps:
+1. `README.md` covering the full lifecycle: question, dataset curation and validation,
+   the label finding, the experiment harness, the ablation results against baseline,
+   the chosen model, containerized serving, and the monitoring design. Apply
+   the-humanizer voice. An architecture diagram of the lifecycle.
+2. `DEVLOG.md` complete.
+3. CI (`.github/workflows/ci.yml`): lint, pytest, a tiny smoke run (one small variant,
+   one epoch, subset) so CI stays fast, and a `docker build`. Full ablation runs happen
+   locally, not in CI.
+4. Update the sam-malik.com entry and confirm the resume bullet matches what shipped.
+
+Acceptance: a stranger can read the README, follow the data steps, run CI green, build
+the container, and see how every phase connects. The resume bullet is backed by real
+artifacts.
+
+### Stretch: live endpoint
+
+Deploy the container to Cloud Run, Fly.io, or a Hugging Face Space for a live
+`/predict` link from the README and website. Optional, only after Phases 0 to 7.
+
+## 7. Feedback to fix traceability
+
+Every graded defect still applies, now to the control model and to how all metrics are
+reported.
 
 | Feedback item | Phase | Fix |
 |---|---|---|
-| Encoding never named | 2 | Call it bag-of-words / term-frequency; compare vs TF-IDF |
-| `stop_words='english'` unjustified, class warned against it | 2 | Frequency pruning (`min_df`/`max_df`), compared |
-| Bigrams-vs-small-data hand-wave | 2 | Frame as overfitting: bigrams explode M with sparse counts |
-| Precision vs specificity confusion | 3 | Report both, name the question each answers |
-| "Insights into patterns" is inferential | 4 | Split explainability (coefficients) from prediction |
-| Fairness prompt not addressed | 4 | Name it separation; check recall/FPR across `variation` |
-| Logreg reason is appeal to popularity | 1 | Re-justify: sparse high-dim text is near linearly separable |
-| "Logreg handles high-dim well" | 2 | Correct it: M >> N is why you regularize |
-| Contenders vague, no reg type | 2 | Explicit L1/L2, stated `C` grid |
-| RF rationale wrong; n_estimators not a real knob | 2 | Variance-reduction rationale; tune `max_depth` |
-| `stratify` unjustified | 1 | Justify: preserves ~8% negative prevalence per split |
-| Notebook is a script | 1 | Markdown structure, one imports block, per-section intent |
-| Overengineered selection loop | 1, 2 | `Pipeline` + `GridSearchCV` |
-| "C=10" meaningless | 2, 3 | State penalty type everywhere C is reported |
+| Encoding never named | 2 | Name TF-IDF and bag-of-words explicitly |
+| `stop_words='english'` unjustified | 2 | Frequency pruning, justified |
+| Bigrams-vs-small-data hand-wave | 2, 3 | Frame as overfitting; test n-grams as an ablation axis |
+| Precision vs specificity confusion | 2, 4 | Report both, name the question each answers |
+| "Insights into patterns" is inferential | 4 | Split explainability from prediction |
+| Fairness prompt not addressed | 4 | Name separation; check recall/FPR across `variation` |
+| Logreg reason is appeal to popularity | 3 | Re-justify on the merits |
+| "Logreg handles high-dim well" | 3 | Correct it: M >> N is why you regularize |
+| Contenders vague, no reg type | 3 | Explicit L1/L2, stated grids in configs |
+| RF rationale wrong; n_estimators not a knob | 3 | If RF is kept, variance rationale and tune depth |
+| `stratify` unjustified | 2 | Justify: preserves rare-class prevalence per split |
+| Notebook is a script | 0, 3 | Config-driven harness plus a narrative report notebook |
+| Overengineered selection loop | 0, 2 | Shared harness and eval, not ad hoc loops |
+| "C=10" meaningless | 3, 4 | State penalty type wherever C is reported |
 | Proposed further analysis never done | 4 | Delivered in full |
-| Part II answers from wrong application | n/a | Cut the class Part II/VI scaffolding entirely |
-
-## 7. Definition of done
-
-- Notebook runs clean top to bottom, reads as an explained analysis.
-- Every graded defect above is closed or consciously cut.
-- Results are reported against the majority baseline, minority-class first.
-- The label-to-rating finding is stated and used.
-- Fairness-as-separation and coefficient interpretation are present.
-- README, requirements, .gitignore, data/README, CI all in place; CI green.
-- Website copy updated.
-- Stretch app is a bonus, not a gate.
+| Part II offensive-speech content | n/a | Not carried over; wrong application |
 
 ## 8. Repo structure
 
@@ -231,31 +266,57 @@ Every graded defect maps to a phase. Nothing is dropped silently.
 voice-assistant-sentiment/
 ├── CLAUDE.md
 ├── PROJECT_PLAN.md
-├── README.md                 # Phase 5
-├── DEVLOG.md                 # append-only
-├── requirements.txt          # Phase 5
-├── .gitignore                # Phase 5
+├── README.md
+├── DEVLOG.md
+├── requirements.txt
+├── .gitignore
+├── Dockerfile
+├── docker-compose.yml          # optional
+├── configs/                    # one file per experiment variant
 ├── data/
-│   ├── README.md             # source + download steps, no data committed
-│   └── raw/                  # amazon_alexa.tsv (gitignored)
+│   ├── README.md               # source, curation notes, data card
+│   ├── raw/                    # amazon_alexa.tsv (gitignored)
+│   └── processed/              # curated artifact (gitignored)
+├── src/
+│   ├── run_experiment.py       # config-driven entrypoint
+│   ├── data/                   # loading, curation, Pandera schema
+│   ├── features/               # TF-IDF and sequence representations
+│   ├── models/                 # sklearn, pytorch, tensorflow variants
+│   ├── evaluation/             # shared metrics and CV protocol
+│   ├── serving/                # FastAPI app
+│   └── monitoring/             # drift detection
 ├── notebooks/
-│   └── sentiment_analysis.ipynb
+│   └── report.ipynb            # narrative analysis and figures
 ├── reports/
-│   └── figures/              # exported figures if needed
-├── app/                      # Phase 6 stretch
-│   └── app.py
+│   └── figures/
+├── tests/
 ├── reference/
 │   ├── original_notebook.ipynb
-│   ├── original_report.pdf
-│   └── (INSTRUCTOR_FEEDBACK.md lives at repo root)
-└── .github/workflows/ci.yml  # Phase 5
+│   └── original_report.pdf
+├── .github/workflows/ci.yml
+└── (INSTRUCTOR_FEEDBACK.md at repo root)
 ```
 
-## 9. Open questions to resolve early
+## 9. Definition of done
 
-- Confirm the exact `feedback` to `rating` mapping (Phase 0). The whole angle depends
-  on it. If for some reason it is not a clean threshold, adjust the framing.
-- Decide the primary operating metric before Phase 3: negative-class recall at a fixed
-  minimum specificity/precision, or the reverse. Tie it to the stated success
-  criterion (recall >= 0.80) so the threshold choice is principled, not post hoc.
-- Decide whether the stretch app is in scope for this cycle or a later one.
+- Config-driven harness runs any variant reproducibly and logs to MLflow.
+- Dataset curated, Pandera-validated, label finding documented.
+- Cross-validated ablation table across sklearn, PyTorch, and TensorFlow variants,
+  including the PyTorch/TensorFlow parity pair, reporting precision, recall, F1 with
+  fold variance, against the majority baseline.
+- Final model selected with a principled threshold; disagreement error analysis,
+  separation fairness check, and interpretation present.
+- FastAPI service containerized and reproducible.
+- Drift monitoring implemented and documented honestly.
+- README covers the full lifecycle with an architecture diagram; CI green.
+- Website and resume bullet match what shipped.
+
+## 10. Open questions
+
+- Confirm the `feedback` to `rating` mapping early (Phase 1). The analytical spine
+  depends on it.
+- Confirm you want two infra-flavored projects (this and #01) in the portfolio, given
+  the overlap.
+- Decide the CI budget: keep DL training out of CI (smoke only) to avoid slow, flaky
+  runs. Full ablations run locally.
+- Decide whether the live-endpoint stretch is in scope this cycle.
