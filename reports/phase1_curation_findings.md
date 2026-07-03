@@ -47,9 +47,9 @@ Predicting "positive" for everything:
 | negative-class recall | 0.0000 |
 | specificity | 1.0000 |
 
-This is the floor every real model must beat. The class report's 0.946 accuracy is
-about 3 points above this do-nothing baseline, which is the whole reason accuracy
-cannot lead. The floor gets negative-class recall of 0, so any recall on the minority
+This is the floor every real model must beat. For comparison, an accuracy of 0.946
+sits only about 3 points above this do-nothing baseline, which is the whole reason
+accuracy cannot lead. The floor gets negative-class recall of 0, so any recall on the minority
 class is progress that accuracy alone hides.
 
 ## Disagreement examples captured

@@ -23,7 +23,6 @@ result is read against a majority-class baseline, minority class first.
 - `data/` raw (gitignored) and curated (gitignored) data, plus the data card.
 - `notebooks/` the narrative report.
 - `reports/` findings and figures.
-- `reference/` the original class notebook and report.
 
 ## Setup
 

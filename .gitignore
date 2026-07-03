@@ -11,6 +11,13 @@ models/
 # Local build helper (notebook is the source of truth)
 build_notebook.py
 
+# Internal working docs and provenance, kept local, not published
+CLAUDE.md
+PROJECT_PLAN.md
+INSTRUCTOR_FEEDBACK.md
+reference/
+reports/reconciliation.md
+
 # OS cruft
 .DS_Store
 
